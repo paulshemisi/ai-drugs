@@ -1,0 +1,51 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ai-drugs"
+version = "0.1.0"
+description = "Deterministic Resonance & Unbounded Generative Synthesis: Transmuting LLM hallucinations into deterministic real-world code through a 4-phase computational trance ritual."
+readme = "README.md"
+authors = [
+    { name = "Paul Shemisi", email = "contact@paulshemisi.com" }
+]
+license = "MIT"
+requires-python = ">=3.10"
+keywords = [
+    "hallucination",
+    "computational-trance",
+    "generative-ai",
+    "deterministic-synthesis",
+    "llm",
+    "code-generation",
+    "shamanic-computing"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "pydantic>=2.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0"
+]
+
+[project.scripts]
+ai-drugs = "ai_drugs.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ai_drugs"]

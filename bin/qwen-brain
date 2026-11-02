@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+#
+# QWEN3-8B BRAIN CONTROLLER (LABORATOIRE PHARMACOLOGIQUE)
+# Forged by Paul Shemisi
+#
+# Usage:
+#   qwen-brain start   -> Démarre et préchauffe le cerveau 6.3 GB en mémoire UMA
+#   qwen-brain status  -> Vérifie si le cerveau est prêt et réactif (latence, mémoire)
+#   qwen-brain stop    -> Éteint le cerveau et libère les 6.3 GB de RAM instantanément
+#   qwen-brain ping    -> Teste une décharge d'inférence en millisecondes
+#
+
+MODEL_PATH="/Volumes/LUMIX/models/Qwen3-8B-Q6_K-Abliterated.gguf"
+PID_FILE="/tmp/qwen3_brain.pid"
+LOG_FILE="/tmp/qwen3_brain.log"
+PORT=8088
+HOST="127.0.0.1"
+
+case "$1" in
+  start)
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+      echo "🟢 Le cerveau Qwen3-8B est DÉJÀ en ligne et chaud sur http://${HOST}:${PORT} (PID: $(cat $PID_FILE))."
+      exit 0
+    fi
+    echo "⚡ [LABORATOIRE] Préchauffage du cerveau Qwen3-8B (6.3 GB) dans la RAM Apple Silicon Metal..."
+    /opt/homebrew/bin/llama-server \
+      -m "$MODEL_PATH" \
+      -ngl 99 \
+      --host "$HOST" \
+      --port "$PORT" \
+      --ctx-size 2048 \
+      --parallel 1 \
+      --log-disable > "$LOG_FILE" 2>&1 &
+    
+    echo $! > "$PID_FILE"
+    echo "⏳ Chargement en cours en tâche de fond (PID: $(cat $PID_FILE))."
+    echo "💡 Utilise './qwen-brain status' pour confirmer quand l'infusion est prête."
+    ;;
+
+  status)
+    if [ -f "$PID_FILE" ] && kill -0 $(cat "$PID_FILE") 2>/dev/null; then
+      HEALTH=$(curl -s "http://${HOST}:${PORT}/health" 2>/dev/null)
+      if [[ "$HEALTH" == *"ok"* ]]; then
+        echo "🟢 CERVEAU CHAUD & OPÉRATIONNEL (PID: $(cat $PID_FILE)) | Endpoint: http://${HOST}:${PORT}/completion"
+      else
+        echo "🟡 Cerveau en cours de transfert depuis LUMIX vers la RAM... Patiente quelques instants."
+      fi
+    else
+      echo "⚪ Cerveau éteint (0 Mo de RAM consommée). Prêt à être allumé avec './qwen-brain start'."
+    fi
+    ;;
+
+  stop)
+    if [ -f "$PID_FILE" ]; then
+      PID=$(cat "$PID_FILE")
+      echo "🛑 Extinction du cerveau Qwen3-8B (PID: $PID)..."
+      kill "$PID" 2>/dev/null
+      rm -f "$PID_FILE"
+      # Sécurité supplémentaire
+      pkill -f "llama-server.*Qwen3-8B" 2>/dev/null
+      echo "✨ RAM libérée instantanément (6.3 GB rendus au Mac). Cerveau au repos."
+    else
+      pkill -f "llama-server.*Qwen3-8B" 2>/dev/null
+      echo "⚪ Aucun processus de cerveau actif."
+    fi
+    ;;
+
+  ping)
+    if ! curl -s "http://${HOST}:${PORT}/health" >/dev/null 2>&1; then
+      echo "🔴 Erreur : Le cerveau n'est pas allumé. Lance d'abord './qwen-brain start'."
+      exit 1
+    fi
+    echo "💉 Injection d'une micro-décharge test..."
+    curl -s "http://${HOST}:${PORT}/completion" \
+      -H "Content-Type: application/json" \
+      -d '{"prompt": "Test vital: Réponds uniquement par le mot CONFIRME.", "n_predict": 10, "temperature": 0.1}' | grep -o '"content":"[^"]*"'
+    echo ""
+    ;;
+
+  *)
+    echo "Usage: qwen-brain {start|status|stop|ping}"
+    exit 1
+    ;;
+esac
